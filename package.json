@@ -1,0 +1,39 @@
+{
+  "name": "ijs.ext.http",
+  "version": "0.1.0",
+  "description": "IJavaScript extension for creating and invoking HTTP APIs interactively.",
+  "keywords": [
+    "interactive",
+    "javascript",
+    "ijs",
+    "ijavascript",
+    "ipython",
+    "notebook",
+    "repl",
+    "console",
+    "ide",
+    "editor",
+    "http",
+    "rest",
+    "api"
+  ],
+  "author": {
+    "author": "Nikhil Kothari",
+    "url": "http://www.nikhilk.net"
+  },
+  "license": "Apache 2.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/interactivecomputing/ijs.ext.http"
+  },
+  "engines": {
+    "node": "0.10.x"
+  },
+  "dependencies": {
+    "q": "^1.1.2",
+    "request": "^2.53.0"
+  },
+  "files": [ "src" ],
+  "main": "src/index.js"
+}
+
