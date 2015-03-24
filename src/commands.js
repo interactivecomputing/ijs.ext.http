@@ -10,20 +10,24 @@
 // either express or implied. See the License for the specific language governing permissions
 // and limitations under the License.
 //
-// index.js
-// The ijs extension implementation.
+// commands.js
+// The commands implemented by the HTTP extension.
 //
 
-var commands = require('./commands');
+// Implements the %%request command, that can be used to issue an HTTP request
+function requestCommand(shell, args, data, evaluationId) {
+  console.log('Request command not yet implemented.');
 
-function initialize(shell, callback) {
-  shell.registerCommand('request', commands.request);
-
-  process.nextTick(function() {
-    callback(null, null);
-  });
+  // TODO: Implement this
+  return null;
+}
+requestCommand.options = function(parser) {
+  // TODO: Implement this
+  return parser;
 }
 
+
 module.exports = {
-  initialize: initialize
+  request: requestCommand
 };
+
