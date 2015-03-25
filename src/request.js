@@ -15,23 +15,48 @@
 //
 
 var http = require('http'),
-    https = require('https');
+    https = require('https'),
+    url = require('url');
 
 var VERBS = [ 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD' ];
 
 function Request(verb, host, path) {
   this.verb = verb;
-  this.host = host;
+  this.host = url.parse(host);
   this.path = path;
 }
 Request.prototype.execute = function(shell) {
   var ijsrt = shell.state._;
 
   return ijsrt.async(function(deferred) {
-    console.log('url: ' + this.host);
-    console.log('verb: ' + this.host);
+    console.log('path: ' + this.path);
+    console.log('verb: ' + this.verb);
 
-    deferred.resolve(null);
+    var transport = this.host.protocol == 'https:' ? https : http;
+    var options = {
+      hostname: this.host.hostname,
+      port: this.host.port,
+      path: this.path,
+      method: this.verb
+    };
+    var request = transport.request(options, function(response) {
+      response.setEncoding('utf8');
+
+      var content = [];
+      response.on('end', function() {
+        content = content.join('');
+        deferred.resolve(content);
+      });
+      response.on('data', function(chunk) {
+        content.push(chunk);
+      });
+    });
+
+    request.on('error', function(e) {
+      deferred.reject(e);
+    });
+
+    request.end();
   });
 }
 
