@@ -14,16 +14,23 @@
 // The commands implemented by the HTTP extension.
 //
 
+var request = require('./request');
+
 // Implements the %%request command, that can be used to issue an HTTP request
 function requestCommand(shell, args, data, evaluationId) {
-  console.log('Request command not yet implemented.');
-
-  // TODO: Implement this
-  return null;
+  return request.parse(args, data, shell.state).execute();
 }
 requestCommand.options = function(parser) {
-  // TODO: Implement this
-  return parser;
+  return parser
+    .help('Issues an HTTP request to the specified domain.')
+    .option('domain', {
+      abbr: 'd',
+      full: 'domain',
+      metavar: 'host',
+      type: 'string',
+      required: true,
+      help: 'the server to issue a request to.'
+    });
 }
 
 
