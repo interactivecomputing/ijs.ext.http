@@ -20,24 +20,23 @@ var http = require('http'),
 
 var VERBS = [ 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD' ];
 
-function Request(verb, host, path) {
+function Request(shell, verb, host, path) {
+  this.shell = shell;
   this.verb = verb;
   this.host = url.parse(host);
   this.path = path;
 }
-Request.prototype.execute = function(shell) {
-  var ijsrt = shell.state._;
+Request.prototype.execute = function() {
+  var self = this;
+  var ijsrt = self.shell.state._;
 
   return ijsrt.async(function(deferred) {
-    console.log('path: ' + this.path);
-    console.log('verb: ' + this.verb);
-
-    var transport = this.host.protocol == 'https:' ? https : http;
+    var transport = self.host.protocol == 'https:' ? https : http;
     var options = {
-      hostname: this.host.hostname,
-      port: this.host.port,
-      path: this.path,
-      method: this.verb
+      hostname: self.host.hostname,
+      port: self.host.port,
+      path: self.path,
+      method: self.verb
     };
     var request = transport.request(options, function(response) {
       response.setEncoding('utf8');
@@ -60,14 +59,14 @@ Request.prototype.execute = function(shell) {
   });
 }
 
-Request.parse = function(args, data, state) {
+Request.parse = function(shell, args, data) {
   var verb;
-  var url;
+  var path;
 
   for (var i = 0; i < VERBS.length; i++) {
     if (data.indexOf(VERBS[i] + ' ') === 0) {
       verb = VERBS[i];
-      url = data.substring(verb.length).trim();
+      path = data.substring(verb.length).trim();
 
       break;
     }
@@ -77,7 +76,7 @@ Request.parse = function(args, data, state) {
     throw new Error('Invalid request. Missing HTTP verb.')
   }
 
-  return new Request(verb, args.domain, url);
+  return new Request(shell, verb, args.domain, path);
 }
 
 module.exports = Request;

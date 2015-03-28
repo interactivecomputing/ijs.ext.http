@@ -18,7 +18,7 @@ var request = require('./request');
 
 // Implements the %%request command, that can be used to issue an HTTP request
 function requestCommand(shell, args, data, evaluationId) {
-  return request.parse(args, data, shell.state).execute();
+  return request.parse(shell, args, data).execute();
 }
 requestCommand.options = function(parser) {
   return parser
