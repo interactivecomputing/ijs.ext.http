@@ -20,11 +20,13 @@ var http = require('http'),
 
 var VERBS = [ 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD' ];
 
-function Request(shell, verb, host, path) {
+function Request(shell, verb, host, path, headers, body) {
   this.shell = shell;
   this.verb = verb;
   this.host = url.parse(host);
   this.path = path;
+  this.headers = headers;
+  this.body = body;
 }
 Request.prototype.execute = function() {
   var self = this;
@@ -36,9 +38,16 @@ Request.prototype.execute = function() {
       hostname: self.host.hostname,
       port: self.host.port,
       path: self.path,
-      method: self.verb
+      method: self.verb,
+      headers: self.headers
     };
+
     var request = transport.request(options, function(response) {
+      if (response.statusCode != 200) {
+        deferred.reject(response.statusCode + ' ' + (response.statusMessage || ''));
+        return;
+      }
+
       response.setEncoding('utf8');
 
       var content = [];
@@ -55,6 +64,9 @@ Request.prototype.execute = function() {
       deferred.reject(e);
     });
 
+    if (self.body) {
+      request.write(self.body, 'utf8');
+    }
     request.end();
   });
 }
@@ -62,21 +74,52 @@ Request.prototype.execute = function() {
 Request.parse = function(shell, args, data) {
   var verb;
   var path;
+  var headers = {};
+  var body;
 
+  data = data.split('\n');
+
+  // Determine verb and path from the first line
+  var firstLine = data[0];
   for (var i = 0; i < VERBS.length; i++) {
-    if (data.indexOf(VERBS[i] + ' ') === 0) {
+    if (firstLine.indexOf(VERBS[i] + ' ') === 0) {
       verb = VERBS[i];
-      path = data.substring(verb.length).trim();
+      path = firstLine.substring(verb.length).trim();
 
       break;
     }
   }
 
   if (!verb) {
-    throw new Error('Invalid request. Missing HTTP verb.')
+    throw shell.createError('Invalid request. Missing or unsupported HTTP verb.');
   }
 
-  return new Request(shell, verb, args.domain, path);
+  // Determine headers from subsequent lines until an empty line is found.
+  var i;
+  for (i = 1; i < data.length; i++) {
+    var line = data[i].trim();
+    if (!line) {
+      break;
+    }
+
+    var nameValue = line.split(':');
+    if (nameValue.length != 2) {
+      throw shell.createError('Invalid request. Invalid HTTP header.');
+    }
+    headers[nameValue[0].trim()] = nameValue[1].trim();
+  }
+
+  if ((i + 1) < data.length) {
+    body = data.slice(i + 1).join('\n');
+
+    if (body && ((verb == 'GET') || (verb == 'HEAD'))) {
+      throw shell.createError('Invalid request. Data is note supported for GET and HEAD requests.');
+    }
+
+    headers['Content-Length'] = Buffer.byteLength(body, 'utf8');
+  }
+
+  return new Request(shell, verb, args.domain, path, headers, body);
 }
 
 module.exports = Request;

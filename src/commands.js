@@ -18,6 +18,13 @@ var request = require('./request');
 
 // Implements the %%request command, that can be used to issue an HTTP request
 function requestCommand(shell, args, data, evaluationId) {
+  data = data || '';
+  data = data.trim();
+
+  if (!data) {
+    throw shell.createError('Missing request data.', 'abc');
+  }
+
   return request.parse(shell, args, data).execute();
 }
 requestCommand.options = function(parser) {
