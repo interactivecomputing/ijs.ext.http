@@ -16,32 +16,64 @@
 
 var request = require('./request');
 
+
 // Implements the %%request command, that can be used to issue an HTTP request
 function requestCommand(shell, args, data, evaluationId) {
   data = data || '';
   data = data.trim();
 
   if (!data) {
-    throw shell.createError('Missing request data.', 'abc');
+    throw shell.createError('Missing request data.');
   }
 
   return request.parse(shell, args, data).execute();
 }
 requestCommand.options = function(parser) {
   return parser
-    .help('Issues an HTTP request to the specified domain.')
-    .option('domain', {
-      abbr: 'd',
-      full: 'domain',
-      metavar: 'host',
-      type: 'string',
+    .help('Issues the specified HTTP request and displays the resulting response.');
+}
+
+
+// Implements the %%url command, that can be used to issue an HTTP request
+function urlCommand(shell, args, data, evaluationId) {
+  return request.create(shell, args, data).execute();
+}
+urlCommand.options = function(parser) {
+  return parser
+    .help('Issues the specified HTTP request and displays the resulting response.')
+    .option('method', {
+      position: 0,
       required: true,
-      help: 'the server to issue a request to.'
+      help: 'the HTTP method to use (eg. GET, POST, etc.)'
+    })
+    .option('url', {
+      position: 1,
+      required: true,
+      help: 'the URL to request'
+    })
+    .option('query', {
+      full: 'query',
+      metavar: 'variable',
+      type: 'string',
+      help: 'the name of the variable containing query data'
+    })
+    .option('headers', {
+      full: 'headers',
+      metavar: 'variable',
+      type: 'string',
+      help: 'the name of the variable containing headers'
+    })
+    .option('data', {
+      full: 'data',
+      metavar: 'variable',
+      type: 'string',
+      help: 'the name of the variable containing request content'
     });
 }
 
 
 module.exports = {
-  request: requestCommand
+  request: requestCommand,
+  url: urlCommand
 };
 

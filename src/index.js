@@ -18,6 +18,7 @@ var commands = require('./commands');
 
 function initialize(shell, callback) {
   shell.registerCommand('request', commands.request);
+  shell.registerCommand('url', commands.url);
 
   process.nextTick(function() {
     callback(null, null);

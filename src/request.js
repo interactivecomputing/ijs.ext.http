@@ -16,33 +16,22 @@
 
 var http = require('http'),
     https = require('https'),
+    qs = require('querystring'),
     url = require('url');
 
-var VERBS = [ 'GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'HEAD' ];
-
-function Request(shell, verb, host, path, headers, body) {
+function Request(shell, transport, requestOptions, body) {
   this.shell = shell;
-  this.verb = verb;
-  this.host = url.parse(host);
-  this.path = path;
-  this.headers = headers;
+  this.transport = transport;
+  this.requestOptions = requestOptions;
   this.body = body;
 }
+
 Request.prototype.execute = function() {
   var self = this;
   var ijsrt = self.shell.state._;
 
   return ijsrt.async(function(deferred) {
-    var transport = self.host.protocol == 'https:' ? https : http;
-    var options = {
-      hostname: self.host.hostname,
-      port: self.host.port,
-      path: self.path,
-      method: self.verb,
-      headers: self.headers
-    };
-
-    var request = transport.request(options, function(response) {
+    var request = self.transport.request(self.requestOptions, function(response) {
       if (response.statusCode != 200) {
         deferred.reject(response.statusCode + ' ' + (response.statusMessage || ''));
         return;
@@ -71,27 +60,68 @@ Request.prototype.execute = function() {
   });
 }
 
+Request.create = function(shell, args, data) {
+  var requestOptions = {
+    method: args.method.toUpperCase()
+  };
+
+  var urlData = url.parse(args.url, /* parseQuery */ true);
+
+  if (args.query) {
+    var queryData = shell.state[args.query];
+    if (queryData) {
+      for (var n in queryData) {
+        urlData.query[n] = queryData[n];
+      }
+    }
+  }
+  var query = qs.stringify(urlData.query);
+
+  if (args.headers) {
+    requestOptions.headers = shell.state[args.headers];
+  }
+
+  if (args.data) {
+    data = shell.state[args.data];
+  }
+
+  requestOptions.hostname = urlData.hostname;
+  requestOptions.port = urlData.port;
+
+  requestOptions.path = urlData.pathname;
+  if (query) {
+    requestOptions.path = requestOptions.path + '?' + query;
+  }
+
+  var transport = urlData.protocol == 'http:' ? http : https;
+  return new Request(shell, transport, requestOptions, data);
+}
+
 Request.parse = function(shell, args, data) {
-  var verb;
-  var path;
-  var headers = {};
+  var transport = http;
+  var requestOptions = {
+    headers: {}
+  };
   var body;
 
   data = data.split('\n');
 
-  // Determine verb and path from the first line
-  var firstLine = data[0];
-  for (var i = 0; i < VERBS.length; i++) {
-    if (firstLine.indexOf(VERBS[i] + ' ') === 0) {
-      verb = VERBS[i];
-      path = firstLine.substring(verb.length).trim();
+  // Determine verb and url from the first line
+  var firstLine = data[0].split(' ');
+  if (firstLine.length == 2) {
+    requestOptions.method = firstLine[0].toUpperCase();
 
-      break;
+    var urlData = url.parse(firstLine[1]);
+    if (urlData.protocol == 'https:') {
+      transport = https;
     }
-  }
 
-  if (!verb) {
-    throw shell.createError('Invalid request. Missing or unsupported HTTP verb.');
+    requestOptions.hostname = urlData.hostname;
+    requestOptions.port = urlData.port;
+    requestOptions.path = urlData.path;
+  }
+  else {
+    throw shell.createError('Invalid request. Missing verb and/or URL to request.');
   }
 
   // Determine headers from subsequent lines until an empty line is found.
@@ -106,20 +136,16 @@ Request.parse = function(shell, args, data) {
     if (nameValue.length != 2) {
       throw shell.createError('Invalid request. Invalid HTTP header.');
     }
-    headers[nameValue[0].trim()] = nameValue[1].trim();
+    requestOptions.headers[nameValue[0].trim()] = nameValue[1].trim();
   }
 
+  // Extract the body of the request
   if ((i + 1) < data.length) {
     body = data.slice(i + 1).join('\n');
-
-    if (body && ((verb == 'GET') || (verb == 'HEAD'))) {
-      throw shell.createError('Invalid request. Data is note supported for GET and HEAD requests.');
-    }
-
-    headers['Content-Length'] = Buffer.byteLength(body, 'utf8');
+    requestOptions.headers['Content-Length'] = Buffer.byteLength(body, 'utf8');
   }
 
-  return new Request(shell, verb, args.domain, path, headers, body);
+  return new Request(shell, transport, requestOptions, body);
 }
 
 module.exports = Request;
