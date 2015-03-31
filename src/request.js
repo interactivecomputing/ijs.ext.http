@@ -37,16 +37,41 @@ Request.prototype.execute = function() {
         return;
       }
 
-      response.setEncoding('utf8');
+      var buffers = [];
+      var totalLength = 0;
 
-      var content = [];
+      response.on('data', function(buffer) {
+        buffers.push(buffer);
+        totalLength += buffer.length;
+      });
       response.on('end', function() {
-        content = content.join('');
+        var content = Buffer.concat(buffers, totalLength);
+
+        var contentType = response.headers['content-type'];
+        var mimeType = contentType.split(';')[0];
+
+        if ((contentType.indexOf('utf-8') > 0) ||
+            (contentType.indexOf('text/') == 0) ||
+            (mimeType == 'application/json')) {
+          content = content.toString('utf8');
+
+          if (mimeType == 'application/json') {
+            content = JSON.parse(content);
+          }
+        }
+        else {
+          content.mime = mimeType;
+        }
+
         deferred.resolve(content);
       });
-      response.on('data', function(chunk) {
-        content.push(chunk);
-      });
+
+      console.log('HTTP ' + response.statusCode);
+      console.log();
+      for (var header in response.headers) {
+        console.log(header + ': ' + response.headers[header]);
+      }
+      console.log();
     });
 
     request.on('error', function(e) {
