@@ -33,9 +33,18 @@ Request.prototype.execute = function() {
 
   return ijsrt.async(function(deferred) {
     var request = self.transport.request(self.requestOptions, function(response) {
+      var status = 'HTTP ' + response.statusCode + ' ' + (response.statusMessage || '');
+      var statusDisplayed = false;
+
       if ((self.outputMode == 'all') || (self.outputMode == 'status') ||
           (self.outputMode == 'metadata')) {
-        console.log('HTTP ' + response.statusCode + ' ' + (response.statusMessage || ''));
+        statusDisplayed = true;
+        if ((response.statusCode >= 200) && (response.statusCode < 400)) {
+          console.log(status);
+        }
+        else {
+          console.error(status);
+        }
         console.log();
       }
       if ((self.outputMode == 'all') || (self.outputMode == 'headers') ||
@@ -47,7 +56,7 @@ Request.prototype.execute = function() {
       }
 
       if (response.statusCode != 200) {
-        deferred.reject(response.statusCode + ' ' + (response.statusMessage || ''));
+        deferred.reject(statusDisplayed ? undefined : status);
         return;
       }
 
