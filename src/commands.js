@@ -30,7 +30,15 @@ function requestCommand(shell, args, data, evaluationId) {
 }
 requestCommand.options = function(parser) {
   return parser
-    .help('Issues the specified HTTP request and displays the resulting response.');
+    .help('Issues the specified HTTP request and displays the resulting response.')
+    .option('response', {
+      full: 'response',
+      metavar: 'mode',
+      type: 'string',
+      choices: [ 'all', 'status', 'headers', 'metadata', 'body' ],
+      default: 'all',
+      help: 'the response display mode (all, status, headers, metadata or body)'
+    })
 }
 
 
@@ -68,7 +76,15 @@ urlCommand.options = function(parser) {
       metavar: 'variable',
       type: 'string',
       help: 'the name of the variable containing request content'
-    });
+    })
+    .option('response', {
+      full: 'response',
+      metavar: 'mode',
+      type: 'string',
+      choices: [ 'all', 'status', 'headers', 'metadata', 'body' ],
+      default: 'all',
+      help: 'the response display mode (all, status, headers, metadata or body)'
+    })
 }
 
 
@@ -76,4 +92,3 @@ module.exports = {
   request: requestCommand,
   url: urlCommand
 };
-

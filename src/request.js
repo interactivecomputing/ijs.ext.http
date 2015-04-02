@@ -19,11 +19,12 @@ var http = require('http'),
     qs = require('querystring'),
     url = require('url');
 
-function Request(shell, transport, requestOptions, body) {
+function Request(shell, transport, requestOptions, body, outputMode) {
   this.shell = shell;
   this.transport = transport;
   this.requestOptions = requestOptions;
   this.body = body;
+  this.outputMode = outputMode;
 }
 
 Request.prototype.execute = function() {
@@ -32,46 +33,57 @@ Request.prototype.execute = function() {
 
   return ijsrt.async(function(deferred) {
     var request = self.transport.request(self.requestOptions, function(response) {
+      if ((self.outputMode == 'all') || (self.outputMode == 'status') ||
+          (self.outputMode == 'metadata')) {
+        console.log('HTTP ' + response.statusCode + ' ' + (response.statusMessage || ''));
+        console.log();
+      }
+      if ((self.outputMode == 'all') || (self.outputMode == 'headers') ||
+          (self.outputMode == 'metadata')) {
+        for (var header in response.headers) {
+          console.log(header + ': ' + response.headers[header]);
+        }
+        console.log();
+      }
+
       if (response.statusCode != 200) {
         deferred.reject(response.statusCode + ' ' + (response.statusMessage || ''));
         return;
       }
 
-      var buffers = [];
-      var totalLength = 0;
+      if ((self.outputMode == 'all') || (self.outputMode == 'body')) {
+        var buffers = [];
+        var totalLength = 0;
 
-      response.on('data', function(buffer) {
-        buffers.push(buffer);
-        totalLength += buffer.length;
-      });
-      response.on('end', function() {
-        var content = Buffer.concat(buffers, totalLength);
+        response.on('data', function(buffer) {
+          buffers.push(buffer);
+          totalLength += buffer.length;
+        });
+        response.on('end', function() {
+          var content = Buffer.concat(buffers, totalLength);
 
-        var contentType = response.headers['content-type'];
-        var mimeType = contentType.split(';')[0];
+          var contentType = response.headers['content-type'];
+          var mimeType = contentType.split(';')[0];
 
-        if ((contentType.indexOf('utf-8') > 0) ||
-            (contentType.indexOf('text/') == 0) ||
-            (mimeType == 'application/json')) {
-          content = content.toString('utf8');
+          if ((contentType.indexOf('utf-8') > 0) ||
+              (contentType.indexOf('text/') == 0) ||
+              (mimeType == 'application/json')) {
+            content = content.toString('utf8');
 
-          if (mimeType == 'application/json') {
-            content = JSON.parse(content);
+            if (mimeType == 'application/json') {
+              content = JSON.parse(content);
+            }
           }
-        }
-        else {
-          content.mime = mimeType;
-        }
+          else {
+            content.mime = mimeType;
+          }
 
-        deferred.resolve(content);
-      });
-
-      console.log('HTTP ' + response.statusCode);
-      console.log();
-      for (var header in response.headers) {
-        console.log(header + ': ' + response.headers[header]);
+          deferred.resolve(content);
+        });
       }
-      console.log();
+      else {
+        deferred.resolve(undefined);
+      }
     });
 
     request.on('error', function(e) {
@@ -119,7 +131,7 @@ Request.create = function(shell, args, data) {
   }
 
   var transport = urlData.protocol == 'http:' ? http : https;
-  return new Request(shell, transport, requestOptions, data);
+  return new Request(shell, transport, requestOptions, data, args.response || 'all');
 }
 
 Request.parse = function(shell, args, data) {
@@ -170,7 +182,7 @@ Request.parse = function(shell, args, data) {
     requestOptions.headers['Content-Length'] = Buffer.byteLength(body, 'utf8');
   }
 
-  return new Request(shell, transport, requestOptions, body);
+  return new Request(shell, transport, requestOptions, body, args.response || 'all');
 }
 
 module.exports = Request;
