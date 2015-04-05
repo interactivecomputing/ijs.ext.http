@@ -29,9 +29,8 @@ function Request(shell, transport, requestOptions, body, outputMode) {
 
 Request.prototype.execute = function() {
   var self = this;
-  var ijsrt = self.shell.state._;
 
-  return ijsrt.async(function(deferred) {
+  return self.shell.runtime.async(function(deferred) {
     var request = self.transport.request(self.requestOptions, function(response) {
       var status = 'HTTP ' + response.statusCode + ' ' + (response.statusMessage || '');
       var statusDisplayed = false;
