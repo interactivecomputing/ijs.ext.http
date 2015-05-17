@@ -14,11 +14,15 @@
 // The ijs extension implementation.
 //
 
-var commands = require('./commands');
+var requestCommands = require('./requestCommands'),
+    serverCommands = require('./serverCommands');
 
 function initialize(shell, callback) {
-  shell.registerCommand('request', commands.request);
-  shell.registerCommand('url', commands.url);
+  shell.registerCommand('request', requestCommands.request);
+  shell.registerCommand('url', requestCommands.url);
+
+  shell.registerCommand('server', serverCommands.server);
+  shell.registerCommand('server.static', serverCommands.serverStatic);
 
   process.nextTick(function() {
     callback(null, null);

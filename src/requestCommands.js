@@ -10,8 +10,8 @@
 // either express or implied. See the License for the specific language governing permissions
 // and limitations under the License.
 //
-// commands.js
-// The commands implemented by the HTTP extension.
+// requestCommands.js
+// Implements commands to issue HTTP requests.
 //
 
 var request = require('./request');
