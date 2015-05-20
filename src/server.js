@@ -19,6 +19,8 @@ var express = require('express'),
     http = require('http'),
     util = require('util');
 
+var bodyParser = require('body-parser'),
+    queryParser = require('./util/queryparser');
 
 function Server() {
   this._port = 0;
@@ -41,6 +43,12 @@ Server.prototype.start = function(port) {
   }
 
   var app = express();
+  app.use(bodyParser.json());
+  app.use(bodyParser.text());
+  app.use(bodyParser.urlencoded({ extended: false }));
+  app.use(bodyParser.raw());
+  app.use(queryParser.parser);
+
   app.get('/static/:id', this._staticContentHandler.bind(this));
 
   var server = http.createServer(app);
