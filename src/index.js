@@ -23,6 +23,7 @@ function initialize(shell, callback) {
 
   shell.registerCommand('server', serverCommands.server);
   shell.registerCommand('server.static', serverCommands.serverStatic);
+  shell.registerCommand('server.route', serverCommands.serverRoute);
 
   process.nextTick(function() {
     callback(null, null);

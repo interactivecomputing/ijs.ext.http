@@ -107,8 +107,17 @@ staticCommand.options = function(parser) {
   return parser;
 }
 
+// Implements the %%server.route command
+// This command can be used to add or remove route handlers used by the server.
+function routeCommand(shell, args, data, evaluationId) {
+}
+routeCommand.options = function(parser) {
+  return parser;
+}
+
 
 module.exports = {
   server: serverCommand,
-  serverStatic: staticCommand
+  serverStatic: staticCommand,
+  serverRoute: routeCommand
 };
