@@ -103,4 +103,15 @@ Server.prototype._staticContentHandler = function(request, response) {
   response.end();
 }
 
+Server.prototype.addRoute = function(path, methods, handler) {
+  var route = this._app.route(path);
+  methods.forEach(function(method) {
+    route[method.toLowerCase()](handler);
+  })
+}
+
+Server.prototype.removeRoute = function(path, methods) {
+
+}
+
 module.exports = new Server();

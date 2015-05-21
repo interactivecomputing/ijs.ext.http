@@ -110,8 +110,61 @@ staticCommand.options = function(parser) {
 // Implements the %%server.route command
 // This command can be used to add or remove route handlers used by the server.
 function routeCommand(shell, args, data, evaluationId) {
+  var methods = args.methods;
+  if (typeof methods == 'string') {
+    methods = [ methods ]
+  };
+
+  if (args['0'] == 'add') {
+    if (args.handler) {
+      var fn = shell.state[args.handler];
+      if (!fn || (typeof fn != 'function')) {
+        throw shell.createError('The specified name "%s" could not be found or is not a function.',
+                                args.handler);
+      }
+
+      server.addRoute(args.path, methods, fn);
+      return undefined;
+    }
+    else {
+      var code = '(function() { return function(request, response) { ' + data + ' } })();';
+
+      return shell.evaluate(code, evaluationId).then(function(fn) {
+        server.addRoute(args.path, methods, fn);
+      });
+    }
+  }
+  else {
+    server.removeRoute(args.path, methods);
+    return undefined;
+  }
 }
 routeCommand.options = function(parser) {
+  parser.option('path', {
+          position: 1,
+          help: 'the path pattern'
+        })
+        .option('methods', {
+          abbr: 'm',
+          full: 'method',
+          metavar: 'method',
+          list: true,
+          choices: ['GET', 'POST', 'PUT', 'DELETE'],
+          'default': 'GET',
+          help: 'the HTTP method (GET, POST, PUT, DELETE)'
+        });
+
+  parser.command('add')
+        .help('adds a route')
+        .option('handler', {
+          abbr: 'h',
+          full: 'handler',
+          metavar: 'name',
+          help: 'the name of a function to use as the handler'
+        });
+
+  parser.command('remove');
+
   return parser;
 }
 
