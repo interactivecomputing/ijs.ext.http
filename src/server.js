@@ -26,7 +26,9 @@ function Server() {
   this._port = 0;
   this._server = null;
   this._app = null;
+  this._router = null;
   this._content = {};
+  this._routes = [];
 }
 
 Server.prototype.port = function() {
@@ -48,8 +50,7 @@ Server.prototype.start = function(port) {
   app.use(bodyParser.urlencoded({ extended: false }));
   app.use(bodyParser.raw());
   app.use(queryParser.parser);
-
-  app.get('/static/:id', this._staticContentHandler.bind(this));
+  app.use(this._routeHandler.bind(this));
 
   var server = http.createServer(app);
   server.listen(port, '127.0.0.1');
@@ -104,14 +105,44 @@ Server.prototype._staticContentHandler = function(request, response) {
 }
 
 Server.prototype.addRoute = function(path, methods, handler) {
-  var route = this._app.route(path);
-  methods.forEach(function(method) {
-    route[method.toLowerCase()](handler);
-  })
+  this.removeRoute(path);
+  this._routes.push({
+    path: path,
+    methods: methods,
+    handler: handler
+  });
+  this._router = null;
 }
 
-Server.prototype.removeRoute = function(path, methods) {
+Server.prototype.removeRoute = function(path) {
+  for (var i = this._routes.length - 1; i >= 0; i--) {
+    if (this._routes[i].path == path) {
+      this._routes.splice(i, 1);
+      this._router = null;
 
+      return true;
+    }
+  }
+
+  return false;
+}
+
+Server.prototype._routeHandler = function(request, response, next) {
+  if (this._router == null) {
+    var router = express.Router();
+    router.get('/static/:id', this._staticContentHandler.bind(this));
+
+    this._routes.forEach(function(routeInfo) {
+      var route = router.route(routeInfo.path);
+      routeInfo.methods.forEach(function(method) {
+        route[method.toLowerCase()](routeInfo.handler);
+      });
+    });
+
+    this._router = router;
+  }
+
+  this._router(request, response, next);
 }
 
 module.exports = new Server();

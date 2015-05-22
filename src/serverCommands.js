@@ -135,7 +135,7 @@ function routeCommand(shell, args, data, evaluationId) {
     }
   }
   else {
-    server.removeRoute(args.path, methods);
+    server.removeRoute(args.path);
     return undefined;
   }
 }
@@ -143,15 +143,6 @@ routeCommand.options = function(parser) {
   parser.option('path', {
           position: 1,
           help: 'the path pattern'
-        })
-        .option('methods', {
-          abbr: 'm',
-          full: 'method',
-          metavar: 'method',
-          list: true,
-          choices: ['GET', 'POST', 'PUT', 'DELETE'],
-          'default': 'GET',
-          help: 'the HTTP method (GET, POST, PUT, DELETE)'
         });
 
   parser.command('add')
@@ -161,6 +152,15 @@ routeCommand.options = function(parser) {
           full: 'handler',
           metavar: 'name',
           help: 'the name of a function to use as the handler'
+        })
+        .option('methods', {
+          abbr: 'm',
+          full: 'method',
+          metavar: 'method',
+          list: true,
+          choices: ['GET', 'POST', 'PUT', 'DELETE'],
+          default: 'GET',
+          help: 'the HTTP method (GET, POST, PUT, DELETE)'
         });
 
   parser.command('remove');
