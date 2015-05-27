@@ -1,7 +1,7 @@
 {
   "name": "ijs.ext.http",
-  "version": "0.2.0",
-  "description": "IJavaScript extension for creating and invoking HTTP APIs interactively.",
+  "version": "0.2.1",
+  "description": "IJavaScript extension for issuing and handling HTTP requests interactively.",
   "keywords": [
     "interactive",
     "javascript",
